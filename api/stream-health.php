@@ -15,5 +15,10 @@ $owner=$st->fetch();if(!$owner){http_response_code(403);echo json_encode(['error
 $chk=db()->prepare('SELECT id,label,url FROM stream_links WHERE id=? AND video_id=? LIMIT 1');$chk->execute([$streamId,$owner['video_id']]);$stream=$chk->fetch();if(!$stream){http_response_code(404);echo json_encode(['error'=>'stream']);exit;}
 $ref=$_SERVER['HTTP_REFERER']??'';$domain=parse_url($ref,PHP_URL_HOST)?:'';$ua=substr($_SERVER['HTTP_USER_AGENT']??'',0,255);
 db()->prepare('INSERT INTO stream_health_events(stream_id,video_id,event_type,client_domain,user_agent) VALUES(?,?,?,?,?)')->execute([$streamId,$owner['video_id'],$type,$domain,$ua]);
+try {
+  $reason=$type==='manual_switch'?'manual switch':'not working';
+  $st=db()->prepare("INSERT INTO reported_links(stream_id,video_id,link_url,reason,reports,status) VALUES(?,?,?,?,1,'pending') ON DUPLICATE KEY UPDATE link_url=VALUES(link_url),reason=VALUES(reason),reports=reports+1,status='pending',updated_at=CURRENT_TIMESTAMP");
+  $st->execute([$streamId,$owner['video_id'],$stream['url'],$reason]);
+} catch(Throwable $e) {}
 db()->prepare("INSERT INTO system_logs(user_id,action,details,ip_hash) VALUES(NULL,?,?,NULL)")->execute(['stream.'.$type,'video_id='.$owner['video_id'].'; stream_id='.$streamId.'; host='.$stream['label']]);
-echo json_encode(['ok'=>true]);
+echo json_encode(['ok'=>true,'reported'=>true]);
