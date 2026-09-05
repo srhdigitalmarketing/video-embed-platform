@@ -2,6 +2,8 @@
 require_once dirname(__DIR__).'/app/auth.php';
 require_admin();
 $page = basename($_SERVER['PHP_SELF']);
+$healthAlerts=0;
+try{$healthAlerts=(int)db()->query("SELECT COUNT(*) FROM stream_health_events WHERE created_at>=DATE_SUB(NOW(),INTERVAL 24 HOUR)")->fetchColumn();}catch(Throwable $e){}
 ?>
 <!doctype html>
 <html lang="en">
@@ -10,8 +12,8 @@ $page = basename($_SERVER['PHP_SELF']);
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e(env('APP_NAME','Video Embed Platform')) ?> — Admin</title>
-<link rel="stylesheet" href="../assets/css/admin.css?v=1.1.1">
-<script defer src="../assets/js/admin.js?v=1.1.1"></script>
+<link rel="stylesheet" href="../assets/css/admin.css?v=1.1.2">
+<script defer src="../assets/js/admin.js?v=1.1.2"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -33,7 +35,7 @@ $page = basename($_SERVER['PHP_SELF']);
 <header class="topbar">
   <button class="menu-toggle" data-sidebar-toggle>☰</button>
   <div class="topbar-spacer"></div>
-  <button class="icon-btn" title="Notifications">♧<i>3</i></button>
+  <a class="icon-btn" title="Stream host alerts" href="<?=e(app_url('admin/logs.php'))?>">♧<?php if($healthAlerts>0):?><i><?= $healthAlerts>99?'99+':$healthAlerts ?></i><?php endif;?></a>
   <div class="profile"><span class="avatar"><?=e(strtoupper(substr((string)($_SESSION['admin_email']??'A'),0,1)))?></span><span><?=e($_SESSION['admin_email']??'admin')?></span><span>⌄</span></div>
 </header>
 <main class="content">
