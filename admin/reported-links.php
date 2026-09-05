@@ -1,0 +1,14 @@
+<?php
+require_once __DIR__.'/_header.php';
+$pdo=db(); $msg='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ verify_csrf(); $action=$_POST['action']??''; $id=(int)($_POST['id']??0);
+ if($id>0 && $action==='clear'){$pdo->prepare("UPDATE reported_links SET status='fixed',reports=0 WHERE id=?")->execute([$id]);log_action('reported_link.clear','report_id='.$id);$msg='Report cleared.';}
+ if($id>0 && $action==='ignore'){$pdo->prepare("UPDATE reported_links SET status='ignored' WHERE id=?")->execute([$id]);log_action('reported_link.ignore','report_id='.$id);$msg='Report ignored.';}
+ if($id>0 && $action==='delete'){$pdo->prepare('DELETE FROM reported_links WHERE id=?')->execute([$id]);log_action('reported_link.delete','report_id='.$id);$msg='Report deleted.';}
+}
+$rows=$pdo->query("SELECT r.*,v.title video_title,s.label stream_label,s.requests FROM reported_links r JOIN videos v ON v.id=r.video_id JOIN stream_links s ON s.id=r.stream_id WHERE r.status='pending' ORDER BY r.reports DESC,r.updated_at DESC")->fetchAll();
+?><div class="page-head"><div><h1>Reported Links</h1><p>Broken external player links detected automatically by the Multi-Host Player.</p></div><span class="badge <?=count($rows)?'processing':'published'?>"><?=count($rows)?> pending</span></div>
+<?php if($msg):?><p class="ok"><?=e($msg)?></p><?php endif;?>
+<div class="panel table-wrap"><table><thead><tr><th>ID</th><th>Link</th><th>Video</th><th>Requests</th><th>Reason</th><th>Reports</th><th>Updated At</th><th>Actions</th></tr></thead><tbody><?php foreach($rows as $r):?><tr><td><?=$r['id']?></td><td style="max-width:420px;overflow:hidden;text-overflow:ellipsis"><code><?=e($r['link_url'])?></code></td><td><?=e($r['video_title'])?></td><td><?=number_format((int)$r['requests'])?></td><td><?=e($r['reason'])?></td><td><span class="badge processing"><?=number_format((int)$r['reports'])?></span></td><td><?=e($r['updated_at'])?></td><td class="actions"><a href="video-edit.php?id=<?=$r['video_id']?>">Movie</a><a href="stream-edit.php?id=<?=$r['stream_id']?>">Edit</a><form method="post" style="display:inline"><?=csrf_field()?><input type="hidden" name="id" value="<?=$r['id']?>"><input type="hidden" name="action" value="clear"><button class="link-button" onclick="return confirm('Mark this report fixed?')">Clear</button></form><form method="post" style="display:inline"><?=csrf_field()?><input type="hidden" name="id" value="<?=$r['id']?>"><input type="hidden" name="action" value="delete"><button class="danger link-button" onclick="return confirm('Delete report?')">Del</button></form></td></tr><?php endforeach;?><?php if(!$rows):?><tr><td colspan="8" class="empty">No reported links. All monitored hosts are clear.</td></tr><?php endif;?></tbody></table></div>
+<?php require __DIR__.'/_footer.php';
