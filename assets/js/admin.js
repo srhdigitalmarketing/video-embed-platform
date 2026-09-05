@@ -1,0 +1,2 @@
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sidebar-toggle]');if(b)document.body.classList.toggle('sidebar-open');});
+setTimeout(()=>document.querySelectorAll('.flash').forEach(x=>x.remove()),5000);
