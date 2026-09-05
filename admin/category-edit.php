@@ -1,0 +1,6 @@
+<?php
+require_once __DIR__.'/_header.php';
+$pdo=db();$id=(int)($_GET['id']??0);$st=$pdo->prepare('SELECT * FROM categories WHERE id=?');$st->execute([$id]);$cat=$st->fetch();if(!$cat){http_response_code(404);exit('Category not found');}
+$msg='';
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$name=trim($_POST['name']??'');if($name===''){$msg='Category name is required.';}else{$slug=slugify($name);$st=$pdo->prepare('UPDATE categories SET name=?,slug=? WHERE id=?');$st->execute([$name,$slug,$id]);log_action('category.update','category_id='.$id);header('Location: categories.php');exit;}}
+?><div class="page-head"><div><h1>Edit Category</h1><p>Update the category name and slug.</p></div></div><?php if($msg):?><p class="error"><?=e($msg)?></p><?php endif;?><form method="post" class="panel" style="padding:22px"><?=csrf_field()?><label>Name<input name="name" value="<?=e($cat['name'])?>" required></label><label>Slug<input value="<?=e($cat['slug'])?>" disabled><small class="muted">Slug updates automatically from the name.</small></label><button>Save Changes</button> <a class="button secondary" href="categories.php">Cancel</a></form><?php require __DIR__.'/_footer.php';
