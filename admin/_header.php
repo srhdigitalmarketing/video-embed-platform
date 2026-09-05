@@ -1,41 +1,16 @@
 <?php
-require_once dirname(__DIR__).'/app/auth.php';
-require_admin();
-$page = basename($_SERVER['PHP_SELF']);
-$healthAlerts=0;
-try{$healthAlerts=(int)db()->query("SELECT COUNT(*) FROM stream_health_events WHERE created_at>=DATE_SUB(NOW(),INTERVAL 24 HOUR)")->fetchColumn();}catch(Throwable $e){}
-?>
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
-<title><?= e(env('APP_NAME','Video Embed Platform')) ?> — Admin</title>
-<link rel="stylesheet" href="../assets/css/admin.css?v=1.1.2">
-<script defer src="../assets/js/admin.js?v=1.1.2"></script>
-</head>
-<body>
-<aside class="sidebar">
-  <div class="brand"><span class="brand-icon">▶</span><span>Video Embed<br>Platform</span></div>
-  <nav>
-    <a class="<?= $page==='index.php'?'active':'' ?>" href="<?=e(app_url('admin/index.php'))?>"><span>⌂</span>Dashboard</a>
-    <a class="<?= in_array($page,['videos.php','video-add.php','video-edit.php'])?'active':'' ?>" href="<?=e(app_url('admin/videos.php'))?>"><span>▣</span>Videos</a>
-    <a class="<?= $page==='categories.php'?'active':'' ?>" href="<?=e(app_url('admin/categories.php'))?>"><span>■</span>Categories</a>
-    <a class="<?= $page==='embed.php'?'active':'' ?>" href="<?=e(app_url('admin/embed.php'))?>"><span>‹/›</span>Embed</a>
-    <a class="<?= $page==='ads.php'?'active':'' ?>" href="<?=e(app_url('admin/ads.php'))?>"><span>Ad</span>Advertisements</a>
-    <a class="<?= $page==='analytics.php'?'active':'' ?>" href="<?=e(app_url('admin/analytics.php'))?>"><span>▥</span>Analytics</a>
-    <a class="<?= $page==='domains.php'?'active':'' ?>" href="<?=e(app_url('admin/domains.php'))?>"><span>◎</span>Domains</a>
-    <a class="<?= $page==='settings.php'?'active':'' ?>" href="<?=e(app_url('admin/settings.php'))?>"><span>⚙</span>Settings</a>
-    <a href="<?=e(app_url('admin/logs.php'))?>"><span>▤</span>System Logs</a>
-  </nav>
-  <a class="logout" href="<?=e(app_url('admin/logout.php'))?>"><span>⇥</span>Logout</a>
-</aside>
-<div class="app-shell">
-<header class="topbar">
-  <button class="menu-toggle" data-sidebar-toggle>☰</button>
-  <div class="topbar-spacer"></div>
-  <a class="icon-btn" title="Stream host alerts" href="<?=e(app_url('admin/logs.php'))?>">♧<?php if($healthAlerts>0):?><i><?= $healthAlerts>99?'99+':$healthAlerts ?></i><?php endif;?></a>
-  <div class="profile"><span class="avatar"><?=e(strtoupper(substr((string)($_SESSION['admin_email']??'A'),0,1)))?></span><span><?=e($_SESSION['admin_email']??'admin')?></span><span>⌄</span></div>
-</header>
-<main class="content">
+require_once dirname(__DIR__).'/app/auth.php'; require_admin();
+$page=basename($_SERVER['PHP_SELF']);$healthAlerts=0;$reportedPending=0;
+try{$healthAlerts=(int)db()->query("SELECT COUNT(*) FROM stream_health_events WHERE event_type IN ('timeout','load_error','play_failed') AND created_at>=DATE_SUB(NOW(),INTERVAL 24 HOUR)")->fetchColumn();}catch(Throwable $e){}
+try{$reportedPending=(int)db()->query("SELECT COUNT(*) FROM reported_links WHERE status='pending'")->fetchColumn();}catch(Throwable $e){}
+?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title><?=e(env('APP_NAME','Video Embed Platform'))?> — Admin</title><link rel="stylesheet" href="../assets/css/admin.css?v=1.1.3"><script defer src="../assets/js/admin.js?v=1.1.3"></script></head><body><aside class="sidebar"><div class="brand"><span class="brand-icon">▶</span><span>Video Embed<br>Platform</span></div><nav>
+<a class="<?=$page==='index.php'?'active':''?>" href="<?=e(app_url('admin/index.php'))?>"><span>⌂</span>Dashboard</a>
+<a class="<?=in_array($page,['videos.php','video-add.php','video-edit.php','stream-edit.php'])?'active':''?>" href="<?=e(app_url('admin/videos.php'))?>"><span>▣</span>Videos</a>
+<a class="<?=in_array($page,['categories.php','category-edit.php'])?'active':''?>" href="<?=e(app_url('admin/categories.php'))?>"><span>■</span>Categories</a>
+<a class="<?=$page==='embed.php'?'active':''?>" href="<?=e(app_url('admin/embed.php'))?>"><span>‹/›</span>Embed</a>
+<a class="<?=in_array($page,['ads.php','ad-edit.php'])?'active':''?>" href="<?=e(app_url('admin/ads.php'))?>"><span>Ad</span>Advertisements</a>
+<a class="<?=$page==='analytics.php'?'active':''?>" href="<?=e(app_url('admin/analytics.php'))?>"><span>▥</span>Analytics</a>
+<a class="<?=$page==='domains.php'?'active':''?>" href="<?=e(app_url('admin/domains.php'))?>"><span>◎</span>Domains</a>
+<a class="<?=$page==='settings.php'?'active':''?>" href="<?=e(app_url('admin/settings.php'))?>"><span>⚙</span>Settings</a>
+<a class="<?=$page==='reported-links.php'?'active':''?>" href="<?=e(app_url('admin/reported-links.php'))?>"><span>⚠</span>Reported Links<?php if($reportedPending):?><em class="nav-count"><?=$reportedPending>99?'99+':$reportedPending?></em><?php endif;?></a>
+<a class="<?=$page==='logs.php'?'active':''?>" href="<?=e(app_url('admin/logs.php'))?>"><span>▤</span>System Logs</a></nav><a class="logout" href="<?=e(app_url('admin/logout.php'))?>"><span>⇥</span>Logout</a></aside><div class="app-shell"><header class="topbar"><button class="menu-toggle" data-sidebar-toggle>☰</button><div class="topbar-spacer"></div><a class="icon-btn" title="Reported host alerts" href="<?=e(app_url('admin/reported-links.php'))?>">♧<?php if($reportedPending):?><i><?=$reportedPending>99?'99+':$reportedPending?></i><?php endif;?></a><div class="profile"><span class="avatar"><?=e(strtoupper(substr((string)($_SESSION['admin_email']??'A'),0,1)))?></span><span><?=e($_SESSION['admin_email']??'admin')?></span><span>⌄</span></div></header><main class="content">
