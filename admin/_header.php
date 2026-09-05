@@ -1,0 +1,4 @@
+<?php require_once dirname(__DIR__).'/app/auth.php'; require_admin(); ?>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title><?= e(env('APP_NAME','Video Embed Platform')) ?></title><link rel="stylesheet" href="<?= e(app_url('assets/css/admin.css')) ?>"></head><body>
+<aside><h2>Video Embed</h2><a href="<?=e(app_url('admin/index.php'))?>">Dashboard</a><a href="<?=e(app_url('admin/videos.php'))?>">Videos</a><a href="<?=e(app_url('admin/categories.php'))?>">Categories</a><a href="<?=e(app_url('admin/domains.php'))?>">Domains</a><a href="<?=e(app_url('admin/ads.php'))?>">Ads</a><a href="<?=e(app_url('admin/analytics.php'))?>">Analytics</a><a href="<?=e(app_url('admin/settings.php'))?>">Settings</a><a href="<?=e(app_url('admin/logout.php'))?>">Logout</a></aside><main>
