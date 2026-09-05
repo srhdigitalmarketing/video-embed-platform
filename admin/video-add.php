@@ -17,18 +17,20 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   $st=db()->prepare('INSERT INTO videos(title,slug,description,category_id,status) VALUES(?,?,?,?,?)');
   $st->execute([$title,$slug,$desc,$cat?:null,$status]);
   $id=(int)db()->lastInsertId();
-  db()->prepare('INSERT INTO embed_tokens(video_id,token) VALUES(?,?)')->execute([$id,random_token()]);
+  do {$playKey='tt'.random_int(100000000,999999999);$q=db()->prepare('SELECT id FROM embed_tokens WHERE play_key=?');$q->execute([$playKey]);} while($q->fetch());
+  db()->prepare('INSERT INTO embed_tokens(video_id,token,play_key) VALUES(?,?,?)')->execute([$id,random_token(),$playKey]);
   if($streamUrl!=='') db()->prepare('INSERT INTO stream_links(video_id,label,url,status,sort_order) VALUES(?,?,?,?,?)')->execute([$id,$streamLabel?:'Stream 1',$streamUrl,1,0]);
-  log_action('video.create','video_id='.$id);
+  log_action('video.create','video_id='.$id.' play_key='.$playKey);
   header('Location: video-edit.php?id='.$id); exit;
  }
 }
-?><div class="page-head"><div><h1>Add Video</h1><p>Create the video metadata and optional first stream link.</p></div></div>
+?><div class="page-head"><div><h1>Add Video</h1><p>Create video metadata and an optional first stream link.</p></div></div>
 <form method="post" class="panel" style="padding:22px"><?=csrf_field()?>
 <label>Title<input name="title" required></label>
 <label>Description<textarea name="description" rows="5"></textarea></label>
 <label>Category<select name="category_id"><option value="0">None</option><?php foreach($cats as $c):?><option value="<?=$c['id']?>"><?=e($c['name'])?></option><?php endforeach;?></select></label>
-<div class="grid"><label>First Stream Label<input name="stream_label" value="Stream 1"></label><label>First Stream URL<input name="stream_url" placeholder="https://example.com/embed/abc123"></label><label>Status<select name="status"><option>draft</option><option>published</option><option>private</option></select></label></div>
-<p class="muted">Cloudflare/R2 fields are intentionally not part of the video editor. Add one or more stream URLs instead.</p>
+<div class="grid"><label>First Stream Label<input name="stream_label" value="Stream 1"></label><label>First Stream URL<input name="stream_url" placeholder="https://example.com/video.m3u8"></label><label>Status<select name="status"><option>draft</option><option>published</option><option>private</option></select></label></div>
+<p class="muted">Public embed links use the clean <code>/play/ttXXXXXXXXX</code> format.</p>
+<?php if($msg):?><p class="error"><?=e($msg)?></p><?php endif;?>
 <button>Create Video</button> <a class="button secondary" href="videos.php">Cancel</a>
 </form><?php require __DIR__.'/_footer.php';
