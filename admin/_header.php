@@ -10,8 +10,8 @@ $page = basename($_SERVER['PHP_SELF']);
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e(env('APP_NAME','Video Embed Platform')) ?> — Admin</title>
-<link rel="stylesheet" href="<?= e(app_url('assets/css/admin.css')) ?>">
-<script defer src="<?= e(app_url('assets/js/admin.js')) ?>"></script>
+<link rel="stylesheet" href="../assets/css/admin.css?v=1.1.1">
+<script defer src="../assets/js/admin.js?v=1.1.1"></script>
 </head>
 <body>
 <aside class="sidebar">
