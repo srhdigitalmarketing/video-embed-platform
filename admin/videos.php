@@ -1,0 +1,3 @@
+<?php require_once __DIR__.'/_header.php'; $rows=db()->query("SELECT v.*,c.name category FROM videos v LEFT JOIN categories c ON c.id=v.category_id WHERE v.status!='deleted' ORDER BY v.id DESC")->fetchAll(); ?>
+<div class="top"><h1>Videos</h1><a class="button" href="video-add.php">+ Add Video</a></div><table><tr><th>ID</th><th>Title</th><th>Status</th><th>Views</th><th>Actions</th></tr><?php foreach($rows as $v):?><tr><td><?=$v['id']?></td><td><?=e($v['title'])?></td><td><?=e($v['status'])?></td><td><?=number_format($v['views'])?></td><td><a href="video-edit.php?id=<?=$v['id']?>">Edit</a> | <a href="embed.php?id=<?=$v['id']?>">Embed</a></td></tr><?php endforeach;?></table>
+<?php require __DIR__.'/_footer.php';
