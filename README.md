@@ -1,28 +1,31 @@
-# Video Embed Platform v1.1
+# Video Embed Platform v1.2
 
-MVP video embed platform with:
+Admin-only video embed platform with external Stream Links and advertising management.
+
+## Features
 - Admin-only dashboard; no public homepage/catalog
-- Video, category, token and allowed-domain management
+- Video, category, embed token and allowed-domain management
+- Multiple external stream links per video
+- Stream link request counters and active/inactive status
 - JavaScript advertising campaigns
 - Adsterra / Clickadu weighted rotation
-- Session cooldown and rotation event logging
+- Advertisement edit/delete controls
 - Server-side publisher API statistics with caching
-- Cloudflare R2 configuration
-- MySQL schema
+- MySQL schema and installer
+
+## Stream delivery
+Cloudflare R2 is no longer part of the application UI or delivery path. Each video can have one or more external stream URLs (HLS `.m3u8` or MP4). The embed player uses the first active stream link and counts its requests.
 
 ## Security
-Never commit .env, API keys, R2 secrets, or publisher credentials.
+Never commit `.env`, API keys, publisher credentials or other secrets.
 
 ## Local installation
-1. Install PHP 8.2+, MySQL/MariaDB and Composer.
-2. Copy .env.example to .env and configure the database.
-3. Run composer install --no-dev.
-4. Import database.sql.
-5. Configure the web root and open /admin/login.php.
-6. Configure R2 and publisher API credentials only in the server environment.
+1. Install PHP 8.2+, MySQL/MariaDB.
+2. Copy `.env.example` to `.env` and configure the database.
+3. `composer install --no-dev`
+4. Import `database.sql` or run the installer.
+5. Open `/admin/login.php`.
+6. For an existing v1.1 installation, run `install/migrate_v1_2.sql`.
 
 ## Advertising
-Adsterra and Clickadu campaign code is executed as JavaScript, not as a plain navigation link. The embed player requests the server-side ad endpoint; API credentials are never exposed to the browser.
-
-## Earnings
-The Ads dashboard reads publisher-reported revenue from the network APIs. Local ad events are analytics only and are not treated as earnings.
+Adsterra and Clickadu snippets are stored as JavaScript campaign code and selected by server-side rotation rules. Publisher API credentials stay server-side. Earnings shown in the dashboard are publisher-reported API revenue, not local estimates.
