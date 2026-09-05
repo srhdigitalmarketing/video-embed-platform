@@ -1,16 +1,20 @@
 <?php
 require_once dirname(__DIR__).'/app/helpers.php';
-require_once dirname(__DIR__).'/app/database.php';
 $token=preg_replace('/[^a-f0-9]/','',(string)($_GET['token']??''));
-$st=db()->prepare("SELECT v.*,t.id token_id FROM embed_tokens t JOIN videos v ON v.id=t.video_id WHERE t.token=? AND t.status=1 AND (t.expires_at IS NULL OR t.expires_at>NOW()) AND v.status='published' LIMIT 1");$st->execute([$token]);$v=$st->fetch();if(!$v){http_response_code(404);exit('Video unavailable');}
+$playKey=trim((string)($_GET['play']??''));
+if($playKey!==''){
+ $st=db()->prepare("SELECT t.token FROM embed_tokens t WHERE t.play_key=? AND t.status=1 LIMIT 1");$st->execute([$playKey]);$token=(string)($st->fetchColumn()?:'');
+}
+if(!preg_match('/^[a-f0-9]{64}$/',$token)){http_response_code(404);exit('Invalid player token');}
+$st=db()->prepare("SELECT v.*,t.id token_id,t.play_key FROM embed_tokens t JOIN videos v ON v.id=t.video_id WHERE t.token=? AND t.status=1 AND (t.expires_at IS NULL OR t.expires_at>NOW()) AND v.status='published' LIMIT 1");$st->execute([$token]);$v=$st->fetch();if(!$v){http_response_code(404);exit('Video unavailable');}
 $ref=$_SERVER['HTTP_REFERER']??'';$host=strtolower(parse_url($ref,PHP_URL_HOST)?:'');
 if($host){$ok=db()->prepare("SELECT id FROM allowed_domains WHERE status=1 AND (domain=? OR ? LIKE CONCAT('%.',domain)) LIMIT 1");$ok->execute([$host,$host]);if(!$ok->fetch()){http_response_code(403);exit('Embedding domain not allowed');}}
-$ls=db()->prepare('SELECT id,url FROM stream_links WHERE video_id=? AND status=1 ORDER BY sort_order,id');$ls->execute([$v['id']]);$streams=$ls->fetchAll();
-if(!$streams){http_response_code(404);exit('No active stream link');}
-$chosen=$streams[0];
-db()->prepare('UPDATE stream_links SET requests=requests+1 WHERE id=?')->execute([$chosen['id']]);
+$ls=db()->prepare('SELECT id,label,url,requests,status FROM stream_links WHERE video_id=? AND status=1 ORDER BY sort_order,id');$ls->execute([$v['id']]);$streams=$ls->fetchAll();
+if(!$streams){http_response_code(404);exit('No active player source');}
 db()->prepare('UPDATE videos SET views=views+1 WHERE id=?')->execute([$v['id']]);
-$source=$chosen['url'];
+$publicKey=(string)($v['play_key']??'');
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="origin-when-cross-origin"><title><?=e($v['title'])?></title><style>html,body{margin:0;background:#000;width:100%;height:100%;overflow:hidden;font-family:system-ui}.player{position:relative;width:100%;height:100%;display:grid;place-items:center}.video{width:100%;height:100%;object-fit:contain;background:#000}</style></head><body><div class="player"><video id="video" class="video" controls playsinline preload="metadata"></video></div>
-<script>window.VEP={token:<?=json_encode($token)?>,source:<?=json_encode($source)?>,analytics:<?=json_encode(app_url('api/analytics.php'))?>,adUrl:<?=json_encode(app_url('api/ad-script.php'))?>};</script><script src="<?=e(app_url('assets/js/player.js'))?>"></script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="origin-when-cross-origin"><title><?=e($v['title'])?></title><style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#05070a;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}.multi-player{width:100%;height:100%;display:flex;flex-direction:column;background:#080b10}.toolbar{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 9px;background:#0f141c;border-bottom:1px solid #ffffff12;overflow:auto}.brand{font-size:12px;font-weight:700;opacity:.8;margin-right:auto;white-space:nowrap}.host-btn{border:1px solid #334155;background:#151d28;color:#cbd5e1;padding:7px 10px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap}.host-btn.active{background:#2563eb;border-color:#3b82f6;color:#fff}.frame-wrap{position:relative;flex:1;min-height:0;background:#000}.frame-wrap iframe{width:100%;height:100%;border:0;display:block;background:#000}.loading{position:absolute;inset:0;display:grid;place-items:center;background:#000;color:#94a3b8;font-size:13px;pointer-events:none}.hidden{display:none!important}.error{padding:22px;color:#fca5a5;text-align:center}
+</style></head><body><div class="multi-player"><div class="toolbar"><div class="brand"><?=e($v['title'])?></div><?php foreach($streams as $i=>$s):?><button class="host-btn <?=$i===0?'active':''?>" data-source="<?=e(base64_encode($s['url']))?>"><?=e($s['label'])?></button><?php endforeach;?></div><div class="frame-wrap"><div id="loading" class="loading">Loading player…</div><iframe id="host-frame" src="<?=e($streams[0]['url'])?>" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="origin-when-cross-origin"></iframe></div></div>
+<script>window.VEP={token:<?=json_encode($token)?>,analytics:<?=json_encode(app_url('api/analytics.php'))?>};(function(){const frame=document.getElementById('host-frame'),load=document.getElementById('loading');document.querySelectorAll('.host-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.host-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');load.classList.remove('hidden');try{frame.src=atob(btn.dataset.source)}catch(e){frame.src='about:blank'};}));frame.addEventListener('load',()=>load.classList.add('hidden'));setTimeout(()=>load.classList.add('hidden'),7000);})();</script></body></html>
