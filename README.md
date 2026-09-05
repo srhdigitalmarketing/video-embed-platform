@@ -1,4 +1,4 @@
-# Video Embed Platform v1.2
+# Video Embed Platform v1.3
 
 Admin-only video embed platform with external Stream Links and advertising management.
 
@@ -12,20 +12,23 @@ Admin-only video embed platform with external Stream Links and advertising manag
 - Advertisement edit/delete controls
 - Server-side publisher API statistics with caching
 - MySQL schema and installer
+- Responsive admin dashboard
 
 ## Stream delivery
-Cloudflare R2 is no longer part of the application UI or delivery path. Each video can have one or more external stream URLs (HLS `.m3u8` or MP4). The embed player uses the first active stream link and counts its requests.
+Cloudflare R2 is not part of the application UI or delivery path. Each video can have one or more external stream URLs (HLS `.m3u8`, MP4, or an external embed endpoint). The embed player uses the first active stream link and counts its requests.
 
-## Security
-Never commit `.env`, API keys, publisher credentials or other secrets.
+## Migration / update
+For an existing installation:
+1. `git pull origin main`
+2. Run `install/migrate_v1_3.sql` against the existing database.
+3. Make sure PHP can access the project files and the web root is correct.
+4. Hard-refresh the browser after deployment.
 
-## Local installation
-1. Install PHP 8.2+, MySQL/MariaDB.
-2. Copy `.env.example` to `.env` and configure the database.
-3. `composer install --no-dev`
-4. Import `database.sql` or run the installer.
-5. Open `/admin/login.php`.
-6. For an existing v1.1 installation, run `install/migrate_v1_2.sql`.
+Example:
+`mysql -u DATABASE_USER -p DATABASE_NAME < install/migrate_v1_3.sql`
 
 ## Advertising
 Adsterra and Clickadu snippets are stored as JavaScript campaign code and selected by server-side rotation rules. Publisher API credentials stay server-side. Earnings shown in the dashboard are publisher-reported API revenue, not local estimates.
+
+## Security
+Never commit `.env`, API keys, publisher credentials or other secrets.
